@@ -44,6 +44,7 @@ void setup() {
   }
 
   // init WiFi
+  // 192.168.4.1 configuration IP
   wifiManager.autoConnect("Wetter-Gadget");
 
   // turn off panes when connected
