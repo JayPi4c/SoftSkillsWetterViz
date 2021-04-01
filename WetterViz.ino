@@ -6,6 +6,10 @@
 #include <ArduinoJson.h>
 #include "WiFiManager.h"
 
+// BLYNK
+#define BLYNK_PRINT Serial
+#include <BlynkSimpleEsp8266.h>
+
 // Weitere Definitionen
 #define DATA_PIN D3
 #define NUM_LEDS 10
@@ -29,6 +33,15 @@ unsigned long lastcheck = 0;
 const String CITY = "Oldenburg";
 
 
+BLYNK_WRITE(V3) {
+  int red = param[0].asInt();
+  int green = param[1].asInt();
+  int blue = param[2].asInt();
+  for (int i = 0; i < NUM_PANES; i++) {
+    showPane(i, CRGB(red, green, blue));
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -47,6 +60,11 @@ void setup() {
   // init WiFi
   // 192.168.4.1 configuration IP
   wifiManager.autoConnect("Wetter-Gadget");
+
+
+  // Serial.println(wifiManager.getWiFiPass());
+  // Serial.println(wifiManager.getWiFiSSID());
+
 
   // turn off panes when connected
   FastLED.clear();
