@@ -14,6 +14,8 @@
 #define DATA_PIN D3
 #define NUM_LEDS 10
 
+#define TOP_LED D2
+
 // LED Stripe
 CRGB leds[NUM_LEDS];
 
@@ -44,6 +46,10 @@ BLYNK_WRITE(V3) {
 
 void setup() {
   Serial.begin(115200);
+
+  // init top LED and turn on.
+  pinMode(TOP_LED, OUTPUT);
+  digitalWrite(TOP_LED, HIGH);
 
   // init LED stripe
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
