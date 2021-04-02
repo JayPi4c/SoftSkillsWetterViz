@@ -4,7 +4,7 @@
 // einbinden weiterer Bibliotheken
 #include <FastLED.h>
 #include <ArduinoJson.h>
-#include "WiFiManager.h"
+//#include "WiFiManager.h"
 
 // BLYNK
 #define BLYNK_PRINT Serial
@@ -20,9 +20,10 @@
 CRGB leds[NUM_LEDS];
 
 // WiFi setup
-WiFiManager wifiManager;
-WiFiClient client;
+// WiFiManager wifiManager;
+ WiFiClient client;
 
+boolean isActive = true;
 
 int prev_weatherID = 0;
 int weatherID = 0;
@@ -34,13 +35,35 @@ unsigned long lastcheck = 0;
 
 const String CITY = "Oldenburg";
 
+// define function to allow default parameter
+void applyConditions(boolean forceUpdate = false);
 
+// function to light up all panes with a color received from Blynk
+// turns off the update functionality
 BLYNK_WRITE(V3) {
+  isActive = false;
+  digitalWrite(TOP_LED, HIGH);
+  Blynk.virtualWrite(V12, LOW);
+
   int red = param[0].asInt();
   int green = param[1].asInt();
   int blue = param[2].asInt();
   for (int i = 0; i < NUM_PANES; i++) {
     showPane(i, CRGB(red, green, blue));
+  }
+}
+
+// allows to turn on and off the device via the App
+BLYNK_WRITE(V12) {
+  isActive = param.asInt();
+  if (isActive) {
+    getCurrentWeatherConditions();
+    applyConditions(true);
+    digitalWrite(TOP_LED, LOW);
+  } else {
+    FastLED.clear();
+    FastLED.show();
+    digitalWrite(TOP_LED, HIGH);
   }
 }
 
@@ -65,11 +88,14 @@ void setup() {
 
   // init WiFi
   // 192.168.4.1 configuration IP
-  wifiManager.autoConnect("Wetter-Gadget");
-
+ // wifiManager.autoConnect("Wetter-Gadget");
 
   // Serial.println(wifiManager.getWiFiPass());
   // Serial.println(wifiManager.getWiFiSSID());
+
+
+  // connect to Blynk
+  Blynk.begin(BLYNK_API_KEY, ssid, pass, "iot.informatik.uni-oldenburg.de", 8080);
 
 
   // turn off panes when connected
@@ -80,10 +106,17 @@ void setup() {
   getCurrentWeatherConditions();
   applyConditions();
 
+  // turn off LED on top, when connected and inform Blynk-App that the panes are active
+  digitalWrite(TOP_LED, LOW);
+  Blynk.virtualWrite(V12, HIGH);
 }
 
 
 void loop() {
+  Blynk.run();
+
+  if (!isActive)
+    return;
 
   // get regularly new weather data
   if (millis() - lastcheck >= INTERVAL) {
@@ -96,10 +129,10 @@ void loop() {
 
 // The IDs definitions can be found online:
 // https://openweathermap.org/weather-conditions
-void applyConditions() {
+void applyConditions(boolean forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
-  if (prev_weatherID == weatherID) {
+  if (!forceUpdate && prev_weatherID == weatherID) {
     // Serial.println("id has not changed... skipping!");
     // Serial.print(prev_weatherID); Serial.print("=="); Serial.println(weatherID);
     return;
