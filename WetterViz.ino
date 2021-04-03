@@ -21,7 +21,7 @@ CRGB leds[NUM_LEDS];
 
 // WiFi setup
 // WiFiManager wifiManager;
- WiFiClient client;
+WiFiClient client;
 
 boolean isActive = true;
 
@@ -38,34 +38,86 @@ const String CITY = "Oldenburg";
 // define function to allow default parameter
 void applyConditions(boolean forceUpdate = false);
 
-// function to light up all panes with a color received from Blynk
+
+// allows to turn on and off the device via the App
+BLYNK_WRITE(V1) {
+  if (param.asInt()) {
+    setActive();
+  } else {
+    setInactive();
+    FastLED.clear();
+    FastLED.show();
+  }
+}
+
+// allow conditions update on user input
+BLYNK_WRITE(V2) {
+  if (param.asInt()) {
+    setActive();
+    lastcheck = millis();
+  }
+  Blynk.virtualWrite(V1, HIGH);
+}
+
+// light up panes for weather conditions indepent of the real weather
 // turns off the update functionality
 BLYNK_WRITE(V3) {
-  isActive = false;
-  digitalWrite(TOP_LED, HIGH);
-  Blynk.virtualWrite(V12, LOW);
+  setInactive();
 
+  switch (param.asInt()) {
+    case 1: // clear
+      weatherID = 800;
+      break;
+    case 2: // cloudy
+      weatherID = 801;
+      break;
+    case 3: // rainy
+      weatherID = 500;
+      break;
+    case 4: // snowy
+      weatherID = 600;
+      break;
+    case 5: // thunderstorm
+      weatherID = 200;
+      break;
+    case 6: // drizzle
+      weatherID = 300;
+      break;
+    case 7: // atmosphere
+      weatherID = 700;
+      break;
+    default: // error
+      weatherID = -1;
+  }
+  applyConditions(true);
+}
+
+// sets the pane index which should light up in custom color
+int paneIndex = -1;
+BLYNK_WRITE(V4) {
+  paneIndex = param.asInt() - 1;
+  if (paneIndex == 5)
+    paneIndex = -1;
+}
+
+// function to light up panes with a color received from Blynk
+// turns off the update functionality
+BLYNK_WRITE(V5) {
+  setInactive();
+  
   int red = param[0].asInt();
   int green = param[1].asInt();
   int blue = param[2].asInt();
-  for (int i = 0; i < NUM_PANES; i++) {
-    showPane(i, CRGB(red, green, blue));
+
+  if (paneIndex == -1) {
+    for (int i = 0; i < NUM_PANES; i++) {
+      showPane(i, CRGB(red, green, blue));
+    }
+  } else {
+    showPane(paneIndex, CRGB(red, green, blue));
   }
 }
 
-// allows to turn on and off the device via the App
-BLYNK_WRITE(V12) {
-  isActive = param.asInt();
-  if (isActive) {
-    getCurrentWeatherConditions();
-    applyConditions(true);
-    digitalWrite(TOP_LED, LOW);
-  } else {
-    FastLED.clear();
-    FastLED.show();
-    digitalWrite(TOP_LED, HIGH);
-  }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -88,7 +140,7 @@ void setup() {
 
   // init WiFi
   // 192.168.4.1 configuration IP
- // wifiManager.autoConnect("Wetter-Gadget");
+  // wifiManager.autoConnect("Wetter-Gadget");
 
   // Serial.println(wifiManager.getWiFiPass());
   // Serial.println(wifiManager.getWiFiSSID());
@@ -103,12 +155,14 @@ void setup() {
   FastLED.show();
 
   // get initial weather conditions and apply them to the panes
-  getCurrentWeatherConditions();
-  applyConditions();
+  //getCurrentWeatherConditions();
+  // applyConditions();
 
   // turn off LED on top, when connected and inform Blynk-App that the panes are active
-  digitalWrite(TOP_LED, LOW);
-  Blynk.virtualWrite(V12, HIGH);
+  //digitalWrite(TOP_LED, LOW);
+  //Blynk.virtualWrite(V12, HIGH);
+
+  setActive();
 }
 
 
@@ -219,7 +273,7 @@ void getCurrentWeatherConditions() {
   prev_weatherID = weatherID;
   weatherID = doc["weather"][0]["id"];
   int temperature_Celsius = doc["main"]["temp"];
-  //serializeJson(doc, Serial);
+  // serializeJson(doc, Serial);
 }
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
@@ -230,4 +284,18 @@ void showPane(int pane, CRGB color) {
     leds[PANES[pane][i]] = color;
   }
   FastLED.show();
+}
+
+void setActive() {
+  isActive = true;
+  getCurrentWeatherConditions();
+  applyConditions(true);
+  digitalWrite(TOP_LED, LOW);
+  Blynk.virtualWrite(V1, HIGH);
+}
+
+void setInactive() {
+  isActive = false;
+  digitalWrite(TOP_LED, HIGH);
+  Blynk.virtualWrite(V1, LOW);
 }
