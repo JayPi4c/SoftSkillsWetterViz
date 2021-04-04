@@ -35,6 +35,9 @@ unsigned long lastcheck = 0;
 
 const String CITY = "Oldenburg";
 
+uint8_t animationMode = 0;
+CHSV animColor = CHSV(0, 255, 255);
+
 // define function to allow default parameter
 void applyConditions(boolean forceUpdate = false);
 
@@ -104,7 +107,7 @@ BLYNK_WRITE(V4) {
 // turns off the update functionality
 BLYNK_WRITE(V5) {
   setInactive();
-  
+
   int red = param[0].asInt();
   int green = param[1].asInt();
   int blue = param[2].asInt();
@@ -117,6 +120,12 @@ BLYNK_WRITE(V5) {
     showPane(paneIndex, CRGB(red, green, blue));
   }
 }
+
+BLYNK_WRITE(V6) {
+  setInactive();
+  animationMode = param.asInt();
+}
+
 
 
 void setup() {
@@ -169,15 +178,39 @@ void setup() {
 void loop() {
   Blynk.run();
 
-  if (!isActive)
-    return;
-
-  // get regularly new weather data
-  if (millis() - lastcheck >= INTERVAL) {
-    getCurrentWeatherConditions();
-    lastcheck = millis();
-    applyConditions();
+  if (isActive) {
+    // get regularly new weather data
+    if (millis() - lastcheck >= INTERVAL) {
+      getCurrentWeatherConditions();
+      lastcheck = millis();
+      applyConditions();
+    }
+  } else {
+    doAnimation();
   }
+}
+
+void doAnimation() {
+  switch (animationMode) {
+    case 0:
+      // do nothing;
+      break;
+    case 1:
+      FastLED.clear();
+      break;
+    case 2:
+      // it iterates really fast over all the colors. Maybe a small timeout would
+      // be apropiate.
+      CRGB rgb;
+      hsv2rgb_rainbow(animColor, rgb);
+      for (int i = 0; i < NUM_PANES; i++) {
+        showPane(i, rgb);
+      }
+      animColor.h++;
+      animColor.h = animColor.h % 255;
+      break;
+  }
+  FastLED.show();
 }
 
 
@@ -296,6 +329,7 @@ void setActive() {
 
 void setInactive() {
   isActive = false;
+  animationMode = 0;
   digitalWrite(TOP_LED, HIGH);
   Blynk.virtualWrite(V1, LOW);
 }
