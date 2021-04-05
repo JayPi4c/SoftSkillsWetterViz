@@ -28,7 +28,6 @@ boolean isActive = true;
 int prev_weatherID = 0;
 int weatherID = 0;
 
-uint8_t counter;
 const uint8_t NUM_PANES = 5;
 const uint32_t INTERVAL = 1800000;
 unsigned long lastcheck = 0;
@@ -190,7 +189,11 @@ void loop() {
   }
 }
 
+
+uint8_t animCounter = 0;
 void doAnimation() {
+  CRGB rgb;
+  uint8_t offset = 255 / NUM_PANES;
   switch (animationMode) {
     case 0:
       // do nothing;
@@ -201,13 +204,38 @@ void doAnimation() {
     case 2:
       // it iterates really fast over all the colors. Maybe a small timeout would
       // be apropiate.
-      CRGB rgb;
+
       hsv2rgb_rainbow(animColor, rgb);
       for (int i = 0; i < NUM_PANES; i++) {
         showPane(i, rgb);
       }
       animColor.h++;
       animColor.h = animColor.h % 255;
+      break;
+    case 3:
+      hsv2rgb_rainbow(animColor, rgb);
+      for (int i = 0; i < NUM_PANES; i++) {
+        hsv2rgb_rainbow(CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
+        showPane(i, rgb);
+      }
+      animColor.h++;
+      animColor.h = animColor.h % 255;
+      break;
+    case 4:
+      // this mode is still experimental.
+      hsv2rgb_rainbow(animColor, rgb);
+      showPane(animCounter, rgb);
+      for (int i = 0; i < NUM_PANES; i++) {
+        if (i == animCounter)
+          continue;
+        showPane(i, CRGB(255, 255, 255));
+      }
+      animColor.h++;
+      if (animColor.h >= 255) {
+        animColor.h = 0;
+        ++animCounter %= NUM_PANES;
+      }
+      delay(10);
       break;
   }
   FastLED.show();
