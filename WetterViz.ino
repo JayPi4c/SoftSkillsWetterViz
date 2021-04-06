@@ -23,14 +23,14 @@ CRGB leds[NUM_LEDS];
 // WiFiManager wifiManager;
 WiFiClient client;
 
-boolean lightsOn = true;
-boolean isActive = true;
+bool lightsOn = true;
+bool isActive = true;
 
 int prev_weatherID = 0;
 int weatherID = 0;
 
 const uint8_t NUM_PANES = 5;
-const uint32_t INTERVAL = 1800000;
+const uint32_t INTERVAL = 900000;
 unsigned long lastcheck = 0;
 
 const String CITY = "Oldenburg";
@@ -39,7 +39,7 @@ uint8_t animationMode = 0;
 CHSV animColor = CHSV(0, 255, 255);
 
 // define function to allow default parameter
-void applyConditions(boolean forceUpdate = false);
+void applyConditions(bool forceUpdate = false);
 
 // allows to turn on and off the device via the App
 BLYNK_WRITE(V1) {
@@ -278,7 +278,7 @@ void doAnimation() {
 
 // The IDs definitions can be found online:
 // https://openweathermap.org/weather-conditions
-void applyConditions(boolean forceUpdate) {
+void applyConditions(bool forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
   if (!forceUpdate && prev_weatherID == weatherID) {
