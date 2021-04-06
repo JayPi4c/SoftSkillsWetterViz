@@ -2,8 +2,8 @@
 #include "secrets.h"
 
 // einbinden weiterer Bibliotheken
-#include <FastLED.h>
 #include <ArduinoJson.h>
+#include <FastLED.h>
 //#include "WiFiManager.h"
 
 // BLYNK
@@ -41,7 +41,6 @@ CHSV animColor = CHSV(0, 255, 255);
 // define function to allow default parameter
 void applyConditions(boolean forceUpdate = false);
 
-
 // allows to turn on and off the device via the App
 BLYNK_WRITE(V1) {
   setLights(true);
@@ -69,6 +68,7 @@ BLYNK_WRITE(V2) {
 BLYNK_WRITE(V3) {
   setLights(true);
   setInactive();
+  animationMode = 255;
 
   switch (param.asInt()) {
     case 1: // clear
@@ -123,7 +123,6 @@ BLYNK_WRITE(V5) {
   } else {
     showPane(paneIndex, CRGB(red, green, blue));
   }
-
 }
 
 BLYNK_WRITE(V6) {
@@ -142,7 +141,6 @@ BLYNK_WRITE(V8) {
   setLights(param.asInt());
 }
 
-
 void setup() {
   Serial.begin(115200);
 
@@ -159,7 +157,7 @@ void setup() {
 
   // set all panes to random color
   for (int i = 0; i < 5; i++) {
-    showPane(i, CRGB( random(0, 255), random(0, 255), random(0, 255)));
+    showPane(i, CRGB(random(0, 255), random(0, 255), random(0, 255)));
   }
 
   // init WiFi
@@ -169,26 +167,24 @@ void setup() {
   // Serial.println(wifiManager.getWiFiPass());
   // Serial.println(wifiManager.getWiFiSSID());
 
-
   // connect to Blynk
   Blynk.begin(BLYNK_API_KEY, ssid, pass, "iot.informatik.uni-oldenburg.de", 8080);
-
 
   // turn off panes when connected
   FastLED.clear();
   FastLED.show();
 
   // get initial weather conditions and apply them to the panes
-  //getCurrentWeatherConditions();
+  // getCurrentWeatherConditions();
   // applyConditions();
 
-  // turn off LED on top, when connected and inform Blynk-App that the panes are active
-  //digitalWrite(TOP_LED, LOW);
-  //Blynk.virtualWrite(V12, HIGH);
+  // turn off LED on top, when connected and inform Blynk-App that the panes are
+  // active
+  // digitalWrite(TOP_LED, LOW);
+  // Blynk.virtualWrite(V12, HIGH);
 
   setActive();
 }
-
 
 void loop() {
   Blynk.run();
@@ -203,12 +199,21 @@ void loop() {
       getCurrentWeatherConditions();
       lastcheck = millis();
       applyConditions();
+    } else if ((weatherID / 100) == 2) {
+      // thunderstorm has extra animation
+      if (random(1000) < 8) {
+        showPane(2, CRGB(255, 255, 255));
+        showPane(1, CRGB(255, 255, 0));
+      } else {
+        showPane(2, CRGB(60, 60, 60));
+        showPane(1, CRGB(0, 0, 255));
+      }
     }
+
   } else {
     doAnimation();
   }
 }
-
 
 uint8_t animCounter = 0;
 void doAnimation() {
@@ -257,10 +262,20 @@ void doAnimation() {
       }
       delay(10);
       break;
+    case 255:
+      if ((weatherID / 100) == 2) {
+        if (random(1000) < 8) {
+          showPane(2, CRGB(255, 255, 255));
+          showPane(1, CRGB(255, 255, 0));
+        } else {
+          showPane(2, CRGB(60, 60, 60));
+          showPane(1, CRGB(0, 0, 255));
+        }
+      }
+      break;
   }
   FastLED.show();
 }
-
 
 // The IDs definitions can be found online:
 // https://openweathermap.org/weather-conditions
@@ -269,7 +284,8 @@ void applyConditions(boolean forceUpdate) {
   // we only need to make changes to the leds if the conditions have changed
   if (!forceUpdate && prev_weatherID == weatherID) {
     // Serial.println("id has not changed... skipping!");
-    // Serial.print(prev_weatherID); Serial.print("=="); Serial.println(weatherID);
+    // Serial.print(prev_weatherID); Serial.print("==");
+    // Serial.println(weatherID);
     return;
   }
 
@@ -279,7 +295,7 @@ void applyConditions(boolean forceUpdate) {
   showPane(4, CRGB(255, 255, 255));
 
   if (weatherID == 800) { // clear sky
-    showPane(3, CRGB( 255, 190, 90));
+    showPane(3, CRGB(255, 190, 90));
     FastLED.show();
     // Serial.println("Clear sky");
     return;
@@ -293,33 +309,33 @@ void applyConditions(boolean forceUpdate) {
   switch (id) {
     case 2: // thunderstorm
       // Serial.println("thunderstorm");
-      showPane(2, CRGB( 60, 60, 60));
-      showPane(1, CRGB( 0, 0, 255));
+      showPane(2, CRGB(60, 60, 60));
+      showPane(1, CRGB(0, 0, 255));
       break;
     case 3: // drizzle
       // Serial.println("drizzle");
-      showPane(2, CRGB( 180, 180, 180));
-      showPane(1, CRGB( 0, 0, 200));
+      showPane(2, CRGB(180, 180, 180));
+      showPane(1, CRGB(0, 0, 200));
       break;
     case 5: // rain
       // Serial.println("rain");
-      showPane(2, CRGB( 255, 255, 255));
-      showPane(1, CRGB( 0, 0, 255));
+      showPane(2, CRGB(255, 255, 255));
+      showPane(1, CRGB(0, 0, 255));
       break;
     case 6: // snow
       // Serial.println("snow");
-      showPane(2, CRGB( 255, 255, 255));
-      showPane(1, CRGB( 255, 255, 255));
+      showPane(2, CRGB(255, 255, 255));
+      showPane(1, CRGB(255, 255, 255));
       break;
     case 7: // atmosphere
       // Serial.println("atmosphere");
-      showPane(2, CRGB( 180, 180, 180));
-      showPane(1, CRGB( 180, 180, 180));
+      showPane(2, CRGB(180, 180, 180));
+      showPane(1, CRGB(180, 180, 180));
       break;
     case 8: // clouds
       // Serial.println("clouds");
-      showPane(3, CRGB( 255, 190, 90));
-      showPane(2, CRGB( 180, 180, 180));
+      showPane(3, CRGB(255, 190, 90));
+      showPane(2, CRGB(180, 180, 180));
       break;
     default:
       // Serial.println("error");
@@ -358,7 +374,7 @@ void getCurrentWeatherConditions() {
 }
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
-const uint8_t PANES [NUM_PANES][2] = {{4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
+const uint8_t PANES[NUM_PANES][2] = {{4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
 
 void showPane(int pane, CRGB color) {
   for (int i = 0; i < 2; i++) {
@@ -381,7 +397,6 @@ void setLights(boolean on) {
       applyConditions(true);
     } else
       digitalWrite(TOP_LED, HIGH);
-
   }
 }
 
