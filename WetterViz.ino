@@ -23,6 +23,7 @@ CRGB leds[NUM_LEDS];
 // WiFiManager wifiManager;
 WiFiClient client;
 
+boolean lightsOn = true;
 boolean isActive = true;
 
 int prev_weatherID = 0;
@@ -43,6 +44,7 @@ void applyConditions(boolean forceUpdate = false);
 
 // allows to turn on and off the device via the App
 BLYNK_WRITE(V1) {
+  setLightsOn();
   if (param.asInt()) {
     setActive();
   } else {
@@ -54,6 +56,7 @@ BLYNK_WRITE(V1) {
 
 // allow conditions update on user input
 BLYNK_WRITE(V2) {
+  setLightsOn();
   if (param.asInt()) {
     setActive();
     lastcheck = millis();
@@ -64,6 +67,7 @@ BLYNK_WRITE(V2) {
 // light up panes for weather conditions indepent of the real weather
 // turns off the update functionality
 BLYNK_WRITE(V3) {
+  setLightsOn();
   setInactive();
 
   switch (param.asInt()) {
@@ -105,6 +109,7 @@ BLYNK_WRITE(V4) {
 // function to light up panes with a color received from Blynk
 // turns off the update functionality
 BLYNK_WRITE(V5) {
+  setLightsOn();
   setInactive();
 
   int red = param[0].asInt();
@@ -118,13 +123,28 @@ BLYNK_WRITE(V5) {
   } else {
     showPane(paneIndex, CRGB(red, green, blue));
   }
+
 }
 
 BLYNK_WRITE(V6) {
+  setLightsOn();
   setInactive();
   animationMode = param.asInt();
 }
 
+// allow user to completely disable lights
+BLYNK_WRITE(V7) {
+  lightsOn = param.asInt();
+  if (!lightsOn) {
+    FastLED.clear();
+    FastLED.show();
+    digitalWrite(TOP_LED, LOW);
+  } else {
+    digitalWrite(TOP_LED, HIGH);
+    if (isActive)
+      applyConditions(true);
+  }
+}
 
 
 void setup() {
@@ -176,6 +196,10 @@ void setup() {
 
 void loop() {
   Blynk.run();
+
+  // if lights are off don't apply conditions or do an animation
+  if (!lightsOn)
+    return;
 
   if (isActive) {
     // get regularly new weather data
@@ -345,6 +369,11 @@ void showPane(int pane, CRGB color) {
     leds[PANES[pane][i]] = color;
   }
   FastLED.show();
+}
+
+void setLightsOn() {
+  lightsOn = true;
+  Blynk.virtualWrite(V7, HIGH);
 }
 
 void setActive() {
