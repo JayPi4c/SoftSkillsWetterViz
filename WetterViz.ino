@@ -3,6 +3,8 @@
 
 // einbinden weiterer Bibliotheken
 #include <ArduinoJson.h>
+#define FASTLED_INTERNAL // define to stop FastLED Pragma, comment out to get
+                         // more information
 #include <FastLED.h>
 //#include "WiFiManager.h"
 
@@ -99,7 +101,7 @@ BLYNK_WRITE(V3) {
 }
 
 // sets the pane index which should light up in custom color
-int paneIndex = -1;
+int8_t paneIndex = -1;
 BLYNK_WRITE(V4) {
   paneIndex = param.asInt() - 1;
   if (paneIndex == 5)
@@ -117,7 +119,7 @@ BLYNK_WRITE(V5) {
   int blue = param[2].asInt();
 
   if (paneIndex == -1) {
-    for (int i = 0; i < NUM_PANES; i++) {
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
       showPane(i, CRGB(red, green, blue));
     }
   } else {
@@ -153,7 +155,7 @@ void setup() {
   FastLED.setBrightness(128);
 
   // set all panes to random color
-  for (int i = 0; i < 5; i++) {
+  for (uint8_t i = 0; i < NUM_PANES; i++) {
     showPane(i, CRGB(random(0, 255), random(0, 255), random(0, 255)));
   }
 
@@ -214,6 +216,7 @@ void loop() {
 }
 
 uint8_t animCounter = 0;
+int8_t animInc = 1;
 void doAnimation() {
   CRGB rgb;
   uint8_t offset = 255 / NUM_PANES;
@@ -229,7 +232,7 @@ void doAnimation() {
     // be apropiate.
 
     hsv2rgb_rainbow(animColor, rgb);
-    for (int i = 0; i < NUM_PANES; i++) {
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
       showPane(i, rgb);
     }
     animColor.h++;
@@ -237,7 +240,7 @@ void doAnimation() {
     break;
   case 3:
     hsv2rgb_rainbow(animColor, rgb);
-    for (int i = 0; i < NUM_PANES; i++) {
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
       hsv2rgb_rainbow(
           CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
       showPane(i, rgb);
@@ -249,7 +252,7 @@ void doAnimation() {
     // this mode is still experimental.
     hsv2rgb_rainbow(animColor, rgb);
     showPane(animCounter, rgb);
-    for (int i = 0; i < NUM_PANES; i++) {
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
       if (i == animCounter)
         continue;
       showPane(i, CRGB(255, 255, 255));
@@ -260,6 +263,21 @@ void doAnimation() {
       ++animCounter %= NUM_PANES;
     }
     delay(10);
+    break;
+  case 5:
+    hsv2rgb_rainbow(animColor, rgb);
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
+      hsv2rgb_rainbow(
+          CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
+      showPane(i, rgb);
+    }
+    animColor.h += animInc;
+    animColor.h = animColor.h % 255;
+    animCounter++;
+    if (animCounter == 0){
+      animInc *= -1;
+      animColor.h = 255;
+      }
     break;
   case 255:
     if ((weatherID / 100) == 2) {
@@ -300,7 +318,7 @@ void applyConditions(bool forceUpdate) {
     return;
   }
 
-  uint8_t id = weatherID / 100; // reduce the id to the main definition
+  int8_t id = weatherID / 100; // reduce the id to the main definition
   // Serial.println();
   // Serial.print("weatherID is "); Serial.println(weatherID);
   // Serial.print("ID is "); Serial.println(id);
@@ -339,7 +357,7 @@ void applyConditions(bool forceUpdate) {
   default:
     // Serial.println("error");
     CRGB col = CRGB(255, 0, 0);
-    for (byte i = 0; i < NUM_PANES; i++) {
+    for (uint8_t i = 0; i < NUM_PANES; i++) {
       showPane(i, col);
     }
   }
@@ -348,7 +366,6 @@ void applyConditions(bool forceUpdate) {
 }
 
 void getCurrentWeatherConditions() {
-  int WeaterData;
   Serial.println("connecting to api.openweathermap.org");
   // get data from api
   if (client.connect("api.openweathermap.org", 80)) {
@@ -372,21 +389,21 @@ void getCurrentWeatherConditions() {
   // set variables according to api answer
   prev_weatherID = weatherID;
   weatherID = doc["weather"][0]["id"];
-  int temperature_Celsius = doc["main"]["temp"];
+  // int temperature_Celsius = doc["main"]["temp"];
   // serializeJson(doc, Serial);
 }
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
 const uint8_t PANES[NUM_PANES][2] = {{4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
 
-void showPane(int pane, CRGB color) {
-  for (int i = 0; i < 2; i++) {
+void showPane(uint8_t pane, CRGB color) {
+  for (uint8_t i = 0; i < 2; i++) {
     leds[PANES[pane][i]] = color;
   }
   FastLED.show();
 }
 
-void setLights(boolean on) {
+void setLights(bool on) {
   lightsOn = on;
 
   if (!lightsOn) {
