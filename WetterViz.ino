@@ -32,10 +32,11 @@ int prev_weatherID = 0;
 int weatherID = 0;
 
 const uint8_t NUM_PANES = 5;
-const uint32_t INTERVAL = 900000;
+uint32_t INTERVAL = 900000;
 unsigned long lastcheck = 0;
 
-const String CITY = "Oldenburg";
+String CITY = "Oldenburg";
+String countryCode = "DE";
 
 uint8_t animationMode = 0;
 CHSV animColor = CHSV(0, 255, 255);
@@ -139,6 +140,30 @@ BLYNK_WRITE(V7) { setLights(param.asInt()); }
 // Timer to turn off lights between certain times
 BLYNK_WRITE(V8) { setLights(param.asInt()); }
 
+// setting city to userinput
+BLYNK_WRITE(V9) {
+  CITY = param.asString();
+  setActive();
+  lastcheck = millis();
+  Blynk.virtualWrite(V1, HIGH);
+  // Serial.print("Changing city to ");Serial.println(CITY);
+}
+
+// setting country code to userinput
+BLYNK_WRITE(V10) {
+  countryCode = param.asString();
+  // Serial.print("Changing country code to ");Serial.println(countryCode);
+}
+
+// setting update interval to user input
+BLYNK_WRITE(V11) {
+  INTERVAL = param.asInt() * 60000l;
+  setActive();
+  lastcheck = millis();
+  Blynk.virtualWrite(V1, HIGH);
+  // Serial.print("Changing Updateinterval to ");Serial.println(INTERVAL);
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -182,6 +207,11 @@ void setup() {
   // active
   // digitalWrite(TOP_LED, LOW);
   // Blynk.virtualWrite(V12, HIGH);
+
+  // write the default settings to Blynk App
+  Blynk.virtualWrite(V9, CITY);
+  Blynk.virtualWrite(V10, countryCode);
+  Blynk.virtualWrite(V11, INTERVAL / 60000l);
 
   setActive();
 }
@@ -274,10 +304,10 @@ void doAnimation() {
     animColor.h += animInc;
     animColor.h = animColor.h % 255;
     animCounter++;
-    if (animCounter == 0){
+    if (animCounter == 0) {
       animInc *= -1;
       animColor.h = 255;
-      }
+    }
     break;
   case 255:
     if ((weatherID / 100) == 2) {
@@ -369,8 +399,8 @@ void getCurrentWeatherConditions() {
   Serial.println("connecting to api.openweathermap.org");
   // get data from api
   if (client.connect("api.openweathermap.org", 80)) {
-    client.println("GET /data/2.5/weather?q=" + CITY +
-                   ",DE&units=metric&lang=de&APPID=" + OWM_API_KEY);
+    client.println("GET /data/2.5/weather?q=" + CITY + "," + countryCode +
+                    "&units=metric&lang=de&APPID=" + OWM_API_KEY);
     client.println("Host: api.openweathermap.org");
     client.println("Connection: close");
     client.println();
@@ -390,7 +420,7 @@ void getCurrentWeatherConditions() {
   prev_weatherID = weatherID;
   weatherID = doc["weather"][0]["id"];
   // int temperature_Celsius = doc["main"]["temp"];
-  // serializeJson(doc, Serial);
+  // serializeJson(doc, Serial);Serial.println();
 }
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
