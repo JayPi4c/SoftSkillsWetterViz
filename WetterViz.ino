@@ -30,6 +30,8 @@ bool isActive = true;
 
 int prev_weatherID = 0;
 int weatherID = 0;
+int prev_temperature_Celsius= 15;
+int temperature_Celsius= 15;
 
 const uint8_t NUM_PANES = 5;
 uint32_t INTERVAL = 900000;
@@ -177,7 +179,7 @@ void setup() {
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 400);
   FastLED.clear();
   FastLED.show();
-  FastLED.setBrightness(128);
+  // FastLED.setBrightness(255);
 
   // set all panes to random color
   for (uint8_t i = 0; i < NUM_PANES; i++) {
@@ -329,7 +331,7 @@ void doAnimation() {
 void applyConditions(bool forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
-  if (!forceUpdate && prev_weatherID == weatherID) {
+  if (!forceUpdate && prev_weatherID == weatherID && prev_temperature_Celsius == temperature_Celsius) {
     // Serial.println("id has not changed... skipping!");
     // Serial.print(prev_weatherID); Serial.print("==");
     // Serial.println(weatherID);
@@ -340,6 +342,15 @@ void applyConditions(bool forceUpdate) {
 
   // set the backpane to white
   showPane(4, CRGB(255, 255, 255));
+
+  // color the front pane according to the current temperature
+  if(temperature_Celsius < 10){
+    showPane(0, CRGB(0, 0, 255));
+  }else if(temperature_Celsius > 20){
+    showPane(0, CRGB(255, 0, 0));
+  }else{
+    showPane(0, CRGB(255, 94, 29));
+  }
 
   if (weatherID == 800) { // clear sky
     showPane(3, CRGB(255, 190, 90));
@@ -419,7 +430,8 @@ void getCurrentWeatherConditions() {
   // set variables according to api answer
   prev_weatherID = weatherID;
   weatherID = doc["weather"][0]["id"];
-  // int temperature_Celsius = doc["main"]["temp"];
+  prev_temperature_Celsius = temperature_Celsius;
+  temperature_Celsius = doc["main"]["temp"];
   // serializeJson(doc, Serial);Serial.println();
 }
 
