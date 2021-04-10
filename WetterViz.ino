@@ -30,12 +30,15 @@ bool isActive = true;
 
 int prev_weatherID = 0;
 int weatherID = 0;
+int prev_temperature_Celsius= 15;
+int temperature_Celsius= 15;
 
 const uint8_t NUM_PANES = 5;
-const uint32_t INTERVAL = 900000;
+uint32_t INTERVAL = 900000;
 unsigned long lastcheck = 0;
 
-const String CITY = "Oldenburg";
+String CITY = "Oldenburg";
+String countryCode = "DE";
 
 uint8_t animationMode = 0;
 CHSV animColor = CHSV(0, 255, 255);
@@ -139,6 +142,30 @@ BLYNK_WRITE(V7) { setLights(param.asInt()); }
 // Timer to turn off lights between certain times
 BLYNK_WRITE(V8) { setLights(param.asInt()); }
 
+// setting city to userinput
+BLYNK_WRITE(V9) {
+  CITY = param.asString();
+  setActive();
+  lastcheck = millis();
+  Blynk.virtualWrite(V1, HIGH);
+  // Serial.print("Changing city to ");Serial.println(CITY);
+}
+
+// setting country code to userinput
+BLYNK_WRITE(V10) {
+  countryCode = param.asString();
+  // Serial.print("Changing country code to ");Serial.println(countryCode);
+}
+
+// setting update interval to user input
+BLYNK_WRITE(V11) {
+  INTERVAL = param.asInt() * 60000l;
+  setActive();
+  lastcheck = millis();
+  Blynk.virtualWrite(V1, HIGH);
+  // Serial.print("Changing Updateinterval to ");Serial.println(INTERVAL);
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -152,7 +179,7 @@ void setup() {
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 400);
   FastLED.clear();
   FastLED.show();
-  FastLED.setBrightness(128);
+  // FastLED.setBrightness(255);
 
   // set all panes to random color
   for (uint8_t i = 0; i < NUM_PANES; i++) {
@@ -182,6 +209,11 @@ void setup() {
   // active
   // digitalWrite(TOP_LED, LOW);
   // Blynk.virtualWrite(V12, HIGH);
+
+  // write the default settings to Blynk App
+  Blynk.virtualWrite(V9, CITY);
+  Blynk.virtualWrite(V10, countryCode);
+  Blynk.virtualWrite(V11, INTERVAL / 60000l);
 
   setActive();
 }
@@ -274,10 +306,10 @@ void doAnimation() {
     animColor.h += animInc;
     animColor.h = animColor.h % 255;
     animCounter++;
-    if (animCounter == 0){
+    if (animCounter == 0) {
       animInc *= -1;
       animColor.h = 255;
-      }
+    }
     break;
   case 255:
     if ((weatherID / 100) == 2) {
@@ -299,7 +331,7 @@ void doAnimation() {
 void applyConditions(bool forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
-  if (!forceUpdate && prev_weatherID == weatherID) {
+  if (!forceUpdate && prev_weatherID == weatherID && prev_temperature_Celsius == temperature_Celsius) {
     // Serial.println("id has not changed... skipping!");
     // Serial.print(prev_weatherID); Serial.print("==");
     // Serial.println(weatherID);
@@ -310,6 +342,15 @@ void applyConditions(bool forceUpdate) {
 
   // set the backpane to white
   showPane(4, CRGB(255, 255, 255));
+
+  // color the front pane according to the current temperature
+  if(temperature_Celsius < 10){
+    showPane(0, CRGB(0, 0, 255));
+  }else if(temperature_Celsius > 20){
+    showPane(0, CRGB(255, 0, 0));
+  }else{
+    showPane(0, CRGB(255, 94, 29));
+  }
 
   if (weatherID == 800) { // clear sky
     showPane(3, CRGB(255, 190, 90));
@@ -369,8 +410,8 @@ void getCurrentWeatherConditions() {
   Serial.println("connecting to api.openweathermap.org");
   // get data from api
   if (client.connect("api.openweathermap.org", 80)) {
-    client.println("GET /data/2.5/weather?q=" + CITY +
-                   ",DE&units=metric&lang=de&APPID=" + OWM_API_KEY);
+    client.println("GET /data/2.5/weather?q=" + CITY + "," + countryCode +
+                    "&units=metric&lang=de&APPID=" + OWM_API_KEY);
     client.println("Host: api.openweathermap.org");
     client.println("Connection: close");
     client.println();
@@ -389,8 +430,9 @@ void getCurrentWeatherConditions() {
   // set variables according to api answer
   prev_weatherID = weatherID;
   weatherID = doc["weather"][0]["id"];
-  // int temperature_Celsius = doc["main"]["temp"];
-  // serializeJson(doc, Serial);
+  prev_temperature_Celsius = temperature_Celsius;
+  temperature_Celsius = doc["main"]["temp"];
+  // serializeJson(doc, Serial);Serial.println();
 }
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
