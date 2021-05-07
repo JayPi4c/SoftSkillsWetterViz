@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <svg viewBox="0 -100  50 111" xmlns="http://www.w3.org/2000/svg" version="1.0" overflow="visible">
+  <defs>
+   <g id="ID__#42_Model_Space"/>
+   <g id="ID__#42_Paper_Space0"/>
+   <g id="ID__#42_Paper_Space"/>
+  </defs>
+  <g id="draft" transform="matrix(1 0 0 -1 0 0)" stroke-width="0.020125">
+   <g id="ID_0" color="rgb(0,0,0)" stroke="currentColor" fill="none" stroke-width="0.020125">
+    <path d="M 9.999999999999996 -0.0000000000000002 L 10 -10.99999999999999 L 20 -10.99999999999999 L 20 0 L 30 0.0000000000000001 L 30 -11 L 40 -10.99999999999998 L 40 0 L 45 0 A 5 5 0 0  1 50.0 5.0 L 50 94.99999999999999 A 5.000000000000011 5.000000000000011 0 0  1 44.99999999999999 100.0 L 5.000000000000008 100 A 5.000000000000003 5.000000000000003 0 0  1 1.1E-15 95.0 L 0 5 A 4.999999999999999 4.999999999999999 0 0  1 4.999999999999999 0.0  z" id="B6"/>
+   </g>
+  </g>
+ </svg>
