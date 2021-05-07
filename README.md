@@ -54,6 +54,8 @@ Um zu verstehen, wie die Anbindung mit Blynk funktioniert ist die [Dokumentation
 In der `setup`-Funktion wird der LED-Streifen initialisiert und eine Verbindung zu Blynk aufgebaut. Hierbei werden vor dem Verbindungsaufbaue alle Scheiben mit einer zufälligen Farbe initialisiert. Konnte eine Verbindung hergestellt werden, so gehen alle LEDs aus und es werden die Wetterdaten von der API bezogen und dargstellt. Sollte ein Fehler auftreten, so leuchten alle Scheiben rot auf.
 In der `loop`-Funktion werden, abhängig von dem aktuellen Modus neue Wetterdaten bezogen oder es wird eine Animation dargestellt. Hierbei wird sich viel der Helper-Funktionen bedient.
 
+![Diagramm](https://user-images.githubusercontent.com/32594337/117454389-614deb00-af46-11eb-9305-150a40540539.png)
+
 Die Helper-Funktionen umfassen Methoden zur Darstellung der Wetterdaten und zum anfordern der Wetterdaten, aber auch kleine Funktionen, welche dafür sorgen, dass man ohne großen Aufwand die richtige Scheibe mit einer Farbe beleuchtet kann. Hervorzuheben ist hier allerdings, dass die Funktion `void applyConditions(bool forceUpadte)` schon einmal oben definiert sein muss, da Arduino sonst Probleme damit hat, das Standard-Argument für die Funktion anzunehmen. Ohne Standard-Argument ist die Definition des Funktions-Kopfes nicht notwendig.
 
 ## Features
