@@ -30,10 +30,17 @@ bool isActive = true;
 
 int prev_weatherID = 0;
 int weatherID = 0;
-int prev_temperature_Celsius= 15;
-int temperature_Celsius= 15;
+int prev_temperature_Celsius = 15;
+int temperature_Celsius = 15;
 
 const uint8_t NUM_PANES = 5;
+
+// lookup table um die LEDs für die jeweiligen Platten zu finden.
+const uint8_t PANES_LOOKUP[NUM_PANES][2] = {
+    {4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
+
+enum PANES { FRONT, RAIN, CLOUD, SUN, BACK };
+
 uint32_t INTERVAL = 900000;
 unsigned long lastcheck = 0;
 
@@ -314,11 +321,11 @@ void doAnimation() {
   case 255:
     if ((weatherID / 100) == 2) {
       if (random(1000) < 8) {
-        showPane(2, CRGB(255, 255, 255));
-        showPane(1, CRGB(255, 255, 0));
+        showPane(CLOUD, CRGB(255, 255, 255));
+        showPane(RAIN, CRGB(255, 255, 0));
       } else {
-        showPane(2, CRGB(60, 60, 60));
-        showPane(1, CRGB(0, 0, 255));
+        showPane(CLOUD, CRGB(60, 60, 60));
+        showPane(RAIN, CRGB(0, 0, 255));
       }
     }
     break;
@@ -331,7 +338,8 @@ void doAnimation() {
 void applyConditions(bool forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
-  if (!forceUpdate && prev_weatherID == weatherID && prev_temperature_Celsius == temperature_Celsius) {
+  if (!forceUpdate && prev_weatherID == weatherID &&
+      prev_temperature_Celsius == temperature_Celsius) {
     // Serial.println("id has not changed... skipping!");
     // Serial.print(prev_weatherID); Serial.print("==");
     // Serial.println(weatherID);
@@ -353,7 +361,7 @@ void applyConditions(bool forceUpdate) {
   }
 
   if (weatherID == 800) { // clear sky
-    showPane(3, CRGB(255, 190, 90));
+    showPane(SUN, CRGB(255, 190, 90));
     FastLED.show();
     // Serial.println("Clear sky");
     return;
@@ -367,33 +375,33 @@ void applyConditions(bool forceUpdate) {
   switch (id) {
   case 2: // thunderstorm
     // Serial.println("thunderstorm");
-    showPane(2, CRGB(60, 60, 60));
-    showPane(1, CRGB(0, 0, 255));
+    showPane(CLOUD, CRGB(60, 60, 60));
+    showPane(RAIN, CRGB(0, 0, 255));
     break;
   case 3: // drizzle
     // Serial.println("drizzle");
-    showPane(2, CRGB(180, 180, 180));
-    showPane(1, CRGB(0, 0, 200));
+    showPane(CLOUD, CRGB(180, 180, 180));
+    showPane(RAIN, CRGB(0, 0, 200));
     break;
   case 5: // rain
     // Serial.println("rain");
-    showPane(2, CRGB(255, 255, 255));
-    showPane(1, CRGB(0, 0, 255));
+    showPane(CLOUD, CRGB(255, 255, 255));
+    showPane(RAIN, CRGB(0, 0, 255));
     break;
   case 6: // snow
     // Serial.println("snow");
-    showPane(2, CRGB(255, 255, 255));
-    showPane(1, CRGB(255, 255, 255));
+    showPane(CLOUD, CRGB(255, 255, 255));
+    showPane(RAIN, CRGB(255, 255, 255));
     break;
   case 7: // atmosphere
     // Serial.println("atmosphere");
-    showPane(2, CRGB(180, 180, 180));
-    showPane(1, CRGB(180, 180, 180));
+    showPane(CLOUD, CRGB(180, 180, 180));
+    showPane(RAIN, CRGB(180, 180, 180));
     break;
   case 8: // clouds
     // Serial.println("clouds");
-    showPane(3, CRGB(255, 190, 90));
-    showPane(2, CRGB(180, 180, 180));
+    showPane(SUN, CRGB(255, 190, 90));
+    showPane(CLOUD, CRGB(180, 180, 180));
     break;
   default:
     // Serial.println("error");
@@ -411,7 +419,7 @@ void getCurrentWeatherConditions() {
   // get data from api
   if (client.connect("api.openweathermap.org", 80)) {
     client.println("GET /data/2.5/weather?q=" + CITY + "," + countryCode +
-                    "&units=metric&lang=de&APPID=" + OWM_API_KEY);
+                   "&units=metric&lang=de&APPID=" + OWM_API_KEY);
     client.println("Host: api.openweathermap.org");
     client.println("Connection: close");
     client.println();
@@ -435,12 +443,9 @@ void getCurrentWeatherConditions() {
   // serializeJson(doc, Serial);Serial.println();
 }
 
-// lookup table um die LEDs für die jeweiligen Platten zu finden.
-const uint8_t PANES[NUM_PANES][2] = {{4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
-
 void showPane(uint8_t pane, CRGB color) {
   for (uint8_t i = 0; i < 2; i++) {
-    leds[PANES[pane][i]] = color;
+    leds[PANES_LOOKUP[pane][i]] = color;
   }
   FastLED.show();
 }
