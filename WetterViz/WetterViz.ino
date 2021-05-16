@@ -175,7 +175,13 @@ BLYNK_WRITE(V11) {
   // Serial.print("Changing Updateinterval to ");Serial.println(INTERVAL);
 }
 
-BLYNK_WRITE(V12) { brightness = param.asInt(); }
+BLYNK_WRITE(V12) {
+  brightness = param.asInt();
+  FastLED.setBrightness(brightness);
+  if (isActive) {
+    applyConditions(true);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -246,18 +252,17 @@ void loop() {
     } else if ((weatherID / 100) == 2) {
       // thunderstorm has extra animation
       if (random(1000) < 8) {
-        showPane(2, CRGB(255, 255, 255));
-        showPane(1, CRGB(255, 255, 0));
+        showPane(CLOUD, CRGB(255, 255, 255));
+        showPane(RAIN, CRGB(255, 255, 0));
       } else {
-        showPane(2, CRGB(60, 60, 60));
-        showPane(1, CRGB(0, 0, 255));
+        showPane(CLOUD, CRGB(60, 60, 60));
+        showPane(RAIN, CRGB(0, 0, 255));
       }
     }
 
   } else {
     doAnimation();
   }
-  FastLED.setBrightness(brightness);
 }
 
 uint8_t animCounter = 0;
