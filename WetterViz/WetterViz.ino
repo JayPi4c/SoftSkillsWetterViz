@@ -348,16 +348,16 @@ void applyConditions(bool forceUpdate) {
 
   FastLED.clear();
 
-  // set the backpane to white
-  showPane(4, CRGB(255, 255, 255));
+  // turn off the front pane
+  showPane(FRONT, CRGB(0, 0, 0));
 
   // color the front pane according to the current temperature
-  if(temperature_Celsius < 10){
-    showPane(0, CRGB(0, 0, 255));
-  }else if(temperature_Celsius > 20){
-    showPane(0, CRGB(255, 0, 0));
-  }else{
-    showPane(0, CRGB(255, 94, 29));
+  if (temperature_Celsius < 10) {
+    showPane(BACK, CRGB(0, 0, 255));
+  } else if (temperature_Celsius > 20) {
+    showPane(BACK, CRGB(255, 0, 0));
+  } else {
+    showPane(BACK, CRGB(255, 94, 29));
   }
 
   if (weatherID == 800) { // clear sky
@@ -473,6 +473,7 @@ void setActive() {
   applyConditions(true);
   digitalWrite(TOP_LED, LOW);
   Blynk.virtualWrite(V1, HIGH);
+  Blynk.virtualWrite(V7, HIGH);
 }
 
 void setInactive() {
