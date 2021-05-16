@@ -27,14 +27,11 @@ jobs:
       - name: Compile sketch
         uses: arduino/compile-sketches@v1
         with:
-          # The default is to compile for the Arduino Uno board. If you want to compile for other boards, use the 'fqbn' input.
-          fqbn: esp8266:esp8266:d1_mini_lite:xtal=80,vt=flash,exception=legacy,ssl=all,eesz=1M64,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=921600
           platforms: |
             - source-url: "http://arduino.esp8266.com/stable/package_esp8266com_index.json"
               name: "esp8266:esp8266"
+          fqbn: esp8266:esp8266:d1_mini_lite:xtal=80,vt=flash,ssl=all,eesz=1M64,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=921600
           sketch-paths: |
-            # Configure the action to search all folders under the root of the repository for sketches and compile them.
-            # This is formatted as a YAML list, which makes it possible to have multiple sketch paths if needed.
             - ./WetterViz/
           libraries: |
             - name: Blynk
