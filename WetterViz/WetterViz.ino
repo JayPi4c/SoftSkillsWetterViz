@@ -28,6 +28,8 @@ WiFiClient client;
 bool lightsOn = true;
 bool isActive = true;
 
+uint8_t brightness = 255;
+
 int prev_weatherID = 0;
 int weatherID = 0;
 int prev_temperature_Celsius = 15;
@@ -173,6 +175,8 @@ BLYNK_WRITE(V11) {
   // Serial.print("Changing Updateinterval to ");Serial.println(INTERVAL);
 }
 
+BLYNK_WRITE(V12) { brightness = param.asInt(); }
+
 void setup() {
   Serial.begin(115200);
 
@@ -221,6 +225,7 @@ void setup() {
   Blynk.virtualWrite(V9, CITY);
   Blynk.virtualWrite(V10, countryCode);
   Blynk.virtualWrite(V11, INTERVAL / 60000l);
+  Blynk.virtualWrite(V12, brightness);
 
   setActive();
 }
@@ -252,6 +257,7 @@ void loop() {
   } else {
     doAnimation();
   }
+  FastLED.setBrightness(brightness);
 }
 
 uint8_t animCounter = 0;
