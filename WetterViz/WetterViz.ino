@@ -28,6 +28,8 @@ WiFiClient client;
 bool lightsOn = true;
 bool isActive = true;
 
+bool topLightOn = false;
+
 uint8_t brightness = 255;
 
 int prev_weatherID = 0;
@@ -175,11 +177,25 @@ BLYNK_WRITE(V11) {
   // Serial.print("Changing Updateinterval to ");Serial.println(INTERVAL);
 }
 
+// change brightness of panes
 BLYNK_WRITE(V12) {
   brightness = param.asInt();
   FastLED.setBrightness(brightness);
   if (isActive) {
     applyConditions(true);
+  }
+}
+
+// allow to turn on and off the top LED
+BLYNK_WRITE(V13) {
+  if (isActive) { // dont turn on top LED, for real weather
+    Blynk.virtualWrite(V13, LOW);
+  } else {  
+    topLightOn = param.asInt();
+    if (topLightOn) {
+      digitalWrite(TOP_LED, HIGH);
+    } else
+      digitalWrite(TOP_LED, LOW);
   }
 }
 
@@ -211,8 +227,7 @@ void setup() {
   // Serial.println(wifiManager.getWiFiSSID());
 
   // connect to Blynk
-  Blynk.begin(BLYNK_API_KEY, ssid, pass, BLYNK_SERVER,
-              BLYNK_PORT);
+  Blynk.begin(BLYNK_API_KEY, ssid, pass, BLYNK_SERVER, BLYNK_PORT);
 
   // turn off panes when connected
   FastLED.clear();
@@ -232,6 +247,7 @@ void setup() {
   Blynk.virtualWrite(V10, countryCode);
   Blynk.virtualWrite(V11, INTERVAL / 60000l);
   Blynk.virtualWrite(V12, brightness);
+  Blynk.virtualWrite(V13, topLightOn);
 
   setActive();
 }
@@ -466,6 +482,7 @@ void setLights(bool on) {
 
   if (!lightsOn) {
     Blynk.virtualWrite(V7, LOW);
+    Blynk.virtualWrite(V13, LOW);
     FastLED.clear();
     FastLED.show();
     digitalWrite(TOP_LED, LOW);
@@ -473,13 +490,16 @@ void setLights(bool on) {
     Blynk.virtualWrite(V7, HIGH);
     if (isActive) {
       applyConditions(true);
-    } else
+    } else if (topLightOn)
       digitalWrite(TOP_LED, HIGH);
+    Blynk.virtualWrite(V13, topLightOn);
   }
 }
 
 void setActive() {
   isActive = true;
+  topLightOn = false;
+  Blynk.virtualWrite(V13, topLightOn);
   getCurrentWeatherConditions();
   applyConditions(true);
   digitalWrite(TOP_LED, LOW);
@@ -490,6 +510,8 @@ void setActive() {
 void setInactive() {
   isActive = false;
   animationMode = 0;
+  topLightOn = true;
+  Blynk.virtualWrite(V13, HIGH);
   digitalWrite(TOP_LED, HIGH);
   Blynk.virtualWrite(V1, LOW);
 }
