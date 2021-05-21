@@ -211,8 +211,8 @@ void setup() {
   // Serial.println(wifiManager.getWiFiSSID());
 
   // connect to Blynk
-  Blynk.begin(BLYNK_API_KEY, ssid, pass, "iot.informatik.uni-oldenburg.de",
-              8080);
+  Blynk.begin(BLYNK_API_KEY, ssid, pass, BLYNK_SERVER,
+              BLYNK_PORT);
 
   // turn off panes when connected
   FastLED.clear();
