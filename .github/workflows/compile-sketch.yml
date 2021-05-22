@@ -37,3 +37,4 @@ jobs:
             - name: Blynk
             - name: ArduinoJson
             - name: FastLED
+            - source-url: https://github.com/PaulStoffregen/Time.git

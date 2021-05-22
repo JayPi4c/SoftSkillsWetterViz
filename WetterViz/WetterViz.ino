@@ -11,6 +11,7 @@
 // BLYNK
 #define BLYNK_PRINT Serial
 #include <BlynkSimpleEsp8266.h>
+#include <WidgetRTC.h>
 
 // Weitere Definitionen
 #define DATA_PIN D3
@@ -31,6 +32,19 @@ bool isActive = true;
 bool topLightOn = false;
 
 uint8_t brightness = 255;
+
+bool dimBySun = false;
+uint8_t dimTime = 15; // time in which the light is dimmed (minutes)
+uint8_t dimMin = 30;
+uint8_t dimMax = 255;
+unsigned long sunrise;
+unsigned long sunset;
+
+uint32_t DIMMING_INTERVAL = 30000; // every 30 seconds
+unsigned long lastcheckDimming = 0;
+
+BlynkTimer timer;
+WidgetRTC rtc;
 
 int prev_weatherID = 0;
 int weatherID = 0;
@@ -54,8 +68,12 @@ String countryCode = "DE";
 uint8_t animationMode = 0;
 CHSV animColor = CHSV(0, 255, 255);
 
-// define function to allow default parameter
+// define functions to allow default parameter
 void applyConditions(bool forceUpdate = false);
+
+void updateBrightness(int b, bool applyOnActive = true);
+
+BLYNK_CONNECTED() { rtc.begin(); }
 
 // allows to turn on and off the device via the App
 BLYNK_WRITE(V1) {
@@ -179,18 +197,16 @@ BLYNK_WRITE(V11) {
 
 // change brightness of panes
 BLYNK_WRITE(V12) {
-  brightness = param.asInt();
-  FastLED.setBrightness(brightness);
-  if (isActive) {
-    applyConditions(true);
-  }
+  dimBySun = false;
+  Blynk.virtualWrite(V15, dimBySun);
+  updateBrightness(param.asInt());
 }
 
 // allow to turn on and off the top LED
 BLYNK_WRITE(V13) {
   if (isActive) { // dont turn on top LED, for real weather
     Blynk.virtualWrite(V13, LOW);
-  } else {  
+  } else {
     topLightOn = param.asInt();
     if (topLightOn) {
       digitalWrite(TOP_LED, HIGH);
@@ -198,6 +214,12 @@ BLYNK_WRITE(V13) {
       digitalWrite(TOP_LED, LOW);
   }
 }
+
+// get todays sunrise and -set time.
+BLYNK_WRITE(V14) { getCurrentWeatherConditions(); }
+
+// allow dimming by sunposition
+BLYNK_WRITE(V15) { dimBySun = param.asInt(); }
 
 void setup() {
   Serial.begin(115200);
@@ -228,6 +250,7 @@ void setup() {
 
   // connect to Blynk
   Blynk.begin(BLYNK_API_KEY, ssid, pass, BLYNK_SERVER, BLYNK_PORT);
+  setSyncInterval(10 * 60);
 
   // turn off panes when connected
   FastLED.clear();
@@ -248,16 +271,40 @@ void setup() {
   Blynk.virtualWrite(V11, INTERVAL / 60000l);
   Blynk.virtualWrite(V12, brightness);
   Blynk.virtualWrite(V13, topLightOn);
+  Blynk.virtualWrite(V15, dimBySun);
 
   setActive();
 }
 
 void loop() {
   Blynk.run();
+  timer.run();
 
   // if lights are off don't apply conditions or do an animation
   if (!lightsOn)
     return;
+
+  if (dimBySun) {
+    time_t t = now();
+    int bright = brightness;
+    if (t > sunrise - dimTime * 60 && t < sunrise) {
+      bright = map(t, sunrise - dimTime * 60, sunrise, dimMin, dimMax);
+    } else if (t > sunset && t < sunset + dimTime * 60) {
+      bright = map(t, sunset, sunset + dimTime * 60, dimMax, dimMin);
+    }
+    if (bright != brightness) {
+      if (!isActive) {
+        updateBrightness(bright);
+      } else {
+        if (millis() - lastcheckDimming >= DIMMING_INTERVAL) {
+          updateBrightness(bright);
+          lastcheckDimming = millis();
+        } else {
+          updateBrightness(bright, false);
+        }
+      }
+    }
+  }
 
   if (isActive) {
     // get regularly new weather data
@@ -467,6 +514,11 @@ void getCurrentWeatherConditions() {
   weatherID = doc["weather"][0]["id"];
   prev_temperature_Celsius = temperature_Celsius;
   temperature_Celsius = doc["main"]["temp"];
+  long tz = doc["timezone"];
+  sunrise = doc["sys"]["sunrise"];
+  sunrise += tz;
+  sunset = doc["sys"]["sunset"];
+  sunset += tz;
   // serializeJson(doc, Serial);Serial.println();
 }
 
@@ -514,4 +566,13 @@ void setInactive() {
   Blynk.virtualWrite(V13, HIGH);
   digitalWrite(TOP_LED, HIGH);
   Blynk.virtualWrite(V1, LOW);
+}
+
+void updateBrightness(int b, bool applyOnActive) {
+  brightness = b;
+  FastLED.setBrightness(brightness);
+  if (isActive && applyOnActive) {
+    applyConditions(true);
+  }
+  Blynk.virtualWrite(V12, brightness);
 }
