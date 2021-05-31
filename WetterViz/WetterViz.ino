@@ -34,13 +34,15 @@ bool topLightOn = false;
 uint8_t brightness = 255;
 
 bool dimBySun = false;
-uint8_t dimTime = 15; // time in which the light is dimmed (minutes)
+uint8_t dimTime = 15;  // time in which the light is dimmed (minutes)
 uint8_t dimMin = 30;
 uint8_t dimMax = 255;
 unsigned long sunrise;
 unsigned long sunset;
 
-uint32_t DIMMING_INTERVAL = 30000; // every 30 seconds
+WidgetLCD lcd(V16);  // used to show the sunrise and -set time in Blynk APP
+
+uint32_t DIMMING_INTERVAL = 30000;  // every 30 seconds
 unsigned long lastcheckDimming = 0;
 
 BlynkTimer timer;
@@ -219,7 +221,21 @@ BLYNK_WRITE(V13) {
 BLYNK_WRITE(V14) { getCurrentWeatherConditions(); }
 
 // allow dimming by sunposition
-BLYNK_WRITE(V15) { dimBySun = param.asInt(); }
+BLYNK_WRITE(V15) {
+  dimBySun = param.asInt();
+  if (dimBySun) {
+    time_t t = now();
+    int bright = brightness;
+    if (t < sunrise - dimTime * 60) {
+      bright = dimMin;
+    } else if (t > sunrise && t < sunset) {
+      bright = dimMax;
+    } else if (t > sunset + dimTime * 60) {
+      bright = dimMin;
+    }
+    updateBrightness(bright);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -519,6 +535,8 @@ void getCurrentWeatherConditions() {
   sunrise += tz;
   sunset = doc["sys"]["sunset"];
   sunset += tz;
+
+  printSunposition();
   // serializeJson(doc, Serial);Serial.println();
 }
 
@@ -545,6 +563,18 @@ void setLights(bool on) {
     } else if (topLightOn)
       digitalWrite(TOP_LED, HIGH);
     Blynk.virtualWrite(V13, topLightOn);
+    if (dimBySun) {
+      time_t t = now();
+      int bright = brightness;
+      if (t < sunrise - dimTime * 60) {
+        bright = dimMin;
+      } else if (t > sunrise && t < sunset) {
+        bright = dimMax;
+      } else if (t > sunset + dimTime * 60) {
+        bright = dimMin;
+      }
+      updateBrightness(bright);
+    }
   }
 }
 
@@ -575,4 +605,44 @@ void updateBrightness(int b, bool applyOnActive) {
     applyConditions(true);
   }
   Blynk.virtualWrite(V12, brightness);
+}
+
+
+// This function is used to show when sunrise and -set are timed and when the automated dimming should apply.
+void printSunposition() {
+  lcd.print(0, 0, "Sun↑: ");
+
+  int val = hour(sunrise);
+  if (val < 10) {
+    lcd.print(6, 0, "0");
+    lcd.print(7, 0, val);
+  } else
+    lcd.print(7, 0, val);
+
+  lcd.print(8, 0, ":");
+
+  val = minute(sunrise);
+  if (val < 10) {
+    lcd.print(9, 0, "0");
+    lcd.print(10, 0, val);
+  } else
+    lcd.print(9, 0, val);
+
+  lcd.print(0, 1, "Sun↓: ");
+
+  val = hour(sunset);
+  if (val < 10) {
+    lcd.print(6, 1, "0");
+    lcd.print(7, 1, val);
+  } else
+    lcd.print(6, 1, val);
+
+  lcd.print(8, 1, ":");
+
+  val = minute(sunset);
+  if (val < 10) {
+    lcd.print(9, 1, "0");
+    lcd.print(10, 1, val);
+  } else
+    lcd.print(9, 1, val);
 }
