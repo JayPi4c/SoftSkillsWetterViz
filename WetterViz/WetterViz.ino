@@ -3,8 +3,8 @@
 
 // einbinden weiterer Bibliotheken
 #include <ArduinoJson.h>
-#define FASTLED_INTERNAL // define to stop FastLED Pragma, comment out to get
-                         // more information
+#define FASTLED_INTERNAL  // define to stop FastLED Pragma, comment out to get \
+                          // more information
 #include <FastLED.h>
 //#include "WiFiManager.h"
 
@@ -57,9 +57,14 @@ const uint8_t NUM_PANES = 5;
 
 // lookup table um die LEDs für die jeweiligen Platten zu finden.
 const uint8_t PANES_LOOKUP[NUM_PANES][2] = {
-    {4, 5}, {3, 6}, {2, 7}, {1, 8}, {0, 9}};
+  { 4, 5 }, { 3, 6 }, { 2, 7 }, { 1, 8 }, { 0, 9 }
+};
 
-enum PANES { FRONT, RAIN, CLOUD, SUN, BACK };
+enum PANES { FRONT,
+             RAIN,
+             CLOUD,
+             SUN,
+             BACK };
 
 uint32_t INTERVAL = 900000;
 unsigned long lastcheck = 0;
@@ -75,7 +80,9 @@ void applyConditions(bool forceUpdate = false);
 
 void updateBrightness(int b, bool applyOnActive = true);
 
-BLYNK_CONNECTED() { rtc.begin(); }
+BLYNK_CONNECTED() {
+  rtc.begin();
+}
 
 // allows to turn on and off the device via the App
 BLYNK_WRITE(V1) {
@@ -107,29 +114,29 @@ BLYNK_WRITE(V3) {
   animationMode = 255;
 
   switch (param.asInt()) {
-  case 1: // clear
-    weatherID = 800;
-    break;
-  case 2: // cloudy
-    weatherID = 801;
-    break;
-  case 3: // rainy
-    weatherID = 500;
-    break;
-  case 4: // snowy
-    weatherID = 600;
-    break;
-  case 5: // thunderstorm
-    weatherID = 200;
-    break;
-  case 6: // drizzle
-    weatherID = 300;
-    break;
-  case 7: // atmosphere
-    weatherID = 700;
-    break;
-  default: // error
-    weatherID = -1;
+    case 1:  // clear
+      weatherID = 800;
+      break;
+    case 2:  // cloudy
+      weatherID = 801;
+      break;
+    case 3:  // rainy
+      weatherID = 500;
+      break;
+    case 4:  // snowy
+      weatherID = 600;
+      break;
+    case 5:  // thunderstorm
+      weatherID = 200;
+      break;
+    case 6:  // drizzle
+      weatherID = 300;
+      break;
+    case 7:  // atmosphere
+      weatherID = 700;
+      break;
+    default:  // error
+      weatherID = -1;
   }
   applyConditions(true);
 }
@@ -168,10 +175,14 @@ BLYNK_WRITE(V6) {
 }
 
 // allow user to completely disable lights
-BLYNK_WRITE(V7) { setLights(param.asInt()); }
+BLYNK_WRITE(V7) {
+  setLights(param.asInt());
+}
 
 // Timer to turn off lights between certain times
-BLYNK_WRITE(V8) { setLights(param.asInt()); }
+BLYNK_WRITE(V8) {
+  setLights(param.asInt());
+}
 
 // setting city to userinput
 BLYNK_WRITE(V9) {
@@ -206,7 +217,7 @@ BLYNK_WRITE(V12) {
 
 // allow to turn on and off the top LED
 BLYNK_WRITE(V13) {
-  if (isActive) { // dont turn on top LED, for real weather
+  if (isActive) {  // dont turn on top LED, for real weather
     Blynk.virtualWrite(V13, LOW);
   } else {
     topLightOn = param.asInt();
@@ -218,7 +229,9 @@ BLYNK_WRITE(V13) {
 }
 
 // get todays sunrise and -set time.
-BLYNK_WRITE(V14) { getCurrentWeatherConditions(); }
+BLYNK_WRITE(V14) {
+  getCurrentWeatherConditions();
+}
 
 // allow dimming by sunposition
 BLYNK_WRITE(V15) {
@@ -246,7 +259,7 @@ void setup() {
 
   // init LED stripe
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS)
-      .setCorrection(TypicalLEDStrip);
+    .setCorrection(TypicalLEDStrip);
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 400);
   FastLED.clear();
   FastLED.show();
@@ -350,75 +363,75 @@ void doAnimation() {
   CRGB rgb;
   uint8_t offset = 255 / NUM_PANES;
   switch (animationMode) {
-  case 0:
-    // do nothing;
-    break;
-  case 1:
-    FastLED.clear();
-    break;
-  case 2:
-    // it iterates really fast over all the colors. Maybe a small timeout would
-    // be apropiate.
+    case 0:
+      // do nothing;
+      break;
+    case 1:
+      FastLED.clear();
+      break;
+    case 2:
+      // it iterates really fast over all the colors. Maybe a small timeout would
+      // be apropiate.
 
-    hsv2rgb_rainbow(animColor, rgb);
-    for (uint8_t i = 0; i < NUM_PANES; i++) {
-      showPane(i, rgb);
-    }
-    animColor.h++;
-    animColor.h = animColor.h % 255;
-    break;
-  case 3:
-    hsv2rgb_rainbow(animColor, rgb);
-    for (uint8_t i = 0; i < NUM_PANES; i++) {
-      hsv2rgb_rainbow(
-          CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
-      showPane(i, rgb);
-    }
-    animColor.h++;
-    animColor.h = animColor.h % 255;
-    break;
-  case 4:
-    // this mode is still experimental.
-    hsv2rgb_rainbow(animColor, rgb);
-    showPane(animCounter, rgb);
-    for (uint8_t i = 0; i < NUM_PANES; i++) {
-      if (i == animCounter)
-        continue;
-      showPane(i, CRGB(255, 255, 255));
-    }
-    animColor.h++;
-    if (animColor.h >= 255) {
-      animColor.h = 0;
-      ++animCounter %= NUM_PANES;
-    }
-    delay(10);
-    break;
-  case 5:
-    hsv2rgb_rainbow(animColor, rgb);
-    for (uint8_t i = 0; i < NUM_PANES; i++) {
-      hsv2rgb_rainbow(
-          CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
-      showPane(i, rgb);
-    }
-    animColor.h += animInc;
-    animColor.h = animColor.h % 255;
-    animCounter++;
-    if (animCounter == 0) {
-      animInc *= -1;
-      animColor.h = 255;
-    }
-    break;
-  case 255:
-    if ((weatherID / 100) == 2) {
-      if (random(1000) < 8) {
-        showPane(CLOUD, CRGB(255, 255, 255));
-        showPane(RAIN, CRGB(255, 255, 0));
-      } else {
-        showPane(CLOUD, CRGB(60, 60, 60));
-        showPane(RAIN, CRGB(0, 0, 255));
+      hsv2rgb_rainbow(animColor, rgb);
+      for (uint8_t i = 0; i < NUM_PANES; i++) {
+        showPane(i, rgb);
       }
-    }
-    break;
+      animColor.h++;
+      animColor.h = animColor.h % 255;
+      break;
+    case 3:
+      hsv2rgb_rainbow(animColor, rgb);
+      for (uint8_t i = 0; i < NUM_PANES; i++) {
+        hsv2rgb_rainbow(
+          CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
+        showPane(i, rgb);
+      }
+      animColor.h++;
+      animColor.h = animColor.h % 255;
+      break;
+    case 4:
+      // this mode is still experimental.
+      hsv2rgb_rainbow(animColor, rgb);
+      showPane(animCounter, rgb);
+      for (uint8_t i = 0; i < NUM_PANES; i++) {
+        if (i == animCounter)
+          continue;
+        showPane(i, CRGB(255, 255, 255));
+      }
+      animColor.h++;
+      if (animColor.h >= 255) {
+        animColor.h = 0;
+        ++animCounter %= NUM_PANES;
+      }
+      delay(10);
+      break;
+    case 5:
+      hsv2rgb_rainbow(animColor, rgb);
+      for (uint8_t i = 0; i < NUM_PANES; i++) {
+        hsv2rgb_rainbow(
+          CHSV(animColor.h + (i * offset), animColor.s, animColor.v), rgb);
+        showPane(i, rgb);
+      }
+      animColor.h += animInc;
+      animColor.h = animColor.h % 255;
+      animCounter++;
+      if (animCounter == 0) {
+        animInc *= -1;
+        animColor.h = 255;
+      }
+      break;
+    case 255:
+      if ((weatherID / 100) == 2) {
+        if (random(1000) < 8) {
+          showPane(CLOUD, CRGB(255, 255, 255));
+          showPane(RAIN, CRGB(255, 255, 0));
+        } else {
+          showPane(CLOUD, CRGB(60, 60, 60));
+          showPane(RAIN, CRGB(0, 0, 255));
+        }
+      }
+      break;
   }
   FastLED.show();
 }
@@ -428,8 +441,7 @@ void doAnimation() {
 void applyConditions(bool forceUpdate) {
 
   // we only need to make changes to the leds if the conditions have changed
-  if (!forceUpdate && prev_weatherID == weatherID &&
-      prev_temperature_Celsius == temperature_Celsius) {
+  if (!forceUpdate && prev_weatherID == weatherID && prev_temperature_Celsius == temperature_Celsius) {
     // Serial.println("id has not changed... skipping!");
     // Serial.print(prev_weatherID); Serial.print("==");
     // Serial.println(weatherID);
@@ -450,55 +462,55 @@ void applyConditions(bool forceUpdate) {
     showPane(BACK, CRGB(255, 94, 29));
   }
 
-  if (weatherID == 800) { // clear sky
+  if (weatherID == 800) {  // clear sky
     showPane(SUN, CRGB(255, 190, 90));
     FastLED.show();
     // Serial.println("Clear sky");
     return;
   }
 
-  int8_t id = weatherID / 100; // reduce the id to the main definition
+  int8_t id = weatherID / 100;  // reduce the id to the main definition
   // Serial.println();
   // Serial.print("weatherID is "); Serial.println(weatherID);
   // Serial.print("ID is "); Serial.println(id);
 
   switch (id) {
-  case 2: // thunderstorm
-    // Serial.println("thunderstorm");
-    showPane(CLOUD, CRGB(60, 60, 60));
-    showPane(RAIN, CRGB(0, 0, 255));
-    break;
-  case 3: // drizzle
-    // Serial.println("drizzle");
-    showPane(CLOUD, CRGB(180, 180, 180));
-    showPane(RAIN, CRGB(0, 0, 200));
-    break;
-  case 5: // rain
-    // Serial.println("rain");
-    showPane(CLOUD, CRGB(255, 255, 255));
-    showPane(RAIN, CRGB(0, 0, 255));
-    break;
-  case 6: // snow
-    // Serial.println("snow");
-    showPane(CLOUD, CRGB(255, 255, 255));
-    showPane(RAIN, CRGB(255, 255, 255));
-    break;
-  case 7: // atmosphere
-    // Serial.println("atmosphere");
-    showPane(CLOUD, CRGB(180, 180, 180));
-    showPane(RAIN, CRGB(180, 180, 180));
-    break;
-  case 8: // clouds
-    // Serial.println("clouds");
-    showPane(SUN, CRGB(255, 190, 90));
-    showPane(CLOUD, CRGB(180, 180, 180));
-    break;
-  default:
-    // Serial.println("error");
-    CRGB col = CRGB(255, 0, 0);
-    for (uint8_t i = 0; i < NUM_PANES; i++) {
-      showPane(i, col);
-    }
+    case 2:  // thunderstorm
+      // Serial.println("thunderstorm");
+      showPane(CLOUD, CRGB(60, 60, 60));
+      showPane(RAIN, CRGB(0, 0, 255));
+      break;
+    case 3:  // drizzle
+      // Serial.println("drizzle");
+      showPane(CLOUD, CRGB(180, 180, 180));
+      showPane(RAIN, CRGB(0, 0, 200));
+      break;
+    case 5:  // rain
+      // Serial.println("rain");
+      showPane(CLOUD, CRGB(255, 255, 255));
+      showPane(RAIN, CRGB(0, 0, 255));
+      break;
+    case 6:  // snow
+      // Serial.println("snow");
+      showPane(CLOUD, CRGB(255, 255, 255));
+      showPane(RAIN, CRGB(255, 255, 255));
+      break;
+    case 7:  // atmosphere
+      // Serial.println("atmosphere");
+      showPane(CLOUD, CRGB(180, 180, 180));
+      showPane(RAIN, CRGB(180, 180, 180));
+      break;
+    case 8:  // clouds
+      // Serial.println("clouds");
+      showPane(SUN, CRGB(255, 190, 90));
+      showPane(CLOUD, CRGB(180, 180, 180));
+      break;
+    default:
+      // Serial.println("error");
+      CRGB col = CRGB(255, 0, 0);
+      for (uint8_t i = 0; i < NUM_PANES; i++) {
+        showPane(i, col);
+      }
   }
   FastLED.show();
   // Serial.println("All done!");
@@ -508,18 +520,14 @@ void getCurrentWeatherConditions() {
   Serial.println("connecting to api.openweathermap.org");
   // get data from api
   if (client.connect("api.openweathermap.org", 80)) {
-    client.println("GET /data/2.5/weather?q=" + CITY + "," + countryCode +
-                   "&units=metric&lang=de&APPID=" + OWM_API_KEY);
+    client.println("GET /data/2.5/weather?q=" + CITY + "," + countryCode + "&units=metric&lang=de&APPID=" + OWM_API_KEY);
     client.println("Host: api.openweathermap.org");
     client.println("Connection: close");
     client.println();
   } else {
     Serial.println("connection failed");
   }
-  const size_t capacity = JSON_ARRAY_SIZE(2) + 2 * JSON_OBJECT_SIZE(1) +
-                          2 * JSON_OBJECT_SIZE(2) + 2 * JSON_OBJECT_SIZE(4) +
-                          JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(6) +
-                          JSON_OBJECT_SIZE(14) + 360;
+  const size_t capacity = JSON_ARRAY_SIZE(2) + 2 * JSON_OBJECT_SIZE(1) + 2 * JSON_OBJECT_SIZE(2) + 2 * JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(6) + JSON_OBJECT_SIZE(14) + 360;
   DynamicJsonDocument doc(capacity);
   // create json from api's data
   deserializeJson(doc, client);
