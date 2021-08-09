@@ -1,4 +1,4 @@
-# SoftSkillsWetterViz
+# Wetter-L
 
 ## Inhaltsverzeichnis
 * [Kurzbeschreibung](#kurzbeschreibung)
