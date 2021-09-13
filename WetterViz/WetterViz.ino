@@ -55,8 +55,6 @@ uint8_t dimMax = 255;
 unsigned long sunrise;
 unsigned long sunset;
 
-// WidgetLCD lcd(V16);  // used to show the sunrise and -set time in Blynk APP
-
 uint32_t DIMMING_INTERVAL = 30000;  // every 30 seconds
 unsigned long lastcheckDimming = 0;
 
