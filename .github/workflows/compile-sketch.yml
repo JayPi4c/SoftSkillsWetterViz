@@ -34,7 +34,8 @@ jobs:
           sketch-paths: |
             - ./WetterViz/
           libraries: |
-            - name: Blynk
+            - name: ArduinoMqttClient
             - name: ArduinoJson
             - name: FastLED
+            - name: WiFiManager
             - source-url: https://github.com/PaulStoffregen/Time.git
